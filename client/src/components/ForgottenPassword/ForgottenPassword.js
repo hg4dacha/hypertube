@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from 'react-router-dom';
+import axios from "axios";
 
 import logo from '../../images/hypertube.png';
 import Languages from "../Languages/Languages";
@@ -39,8 +40,27 @@ const ForgottenPassword = () => {
         {
             if (EMAIL_REGEX.test(signinForm.email))
             {
-
-            } else {
+                axios.post('users/password', signinForm)
+                .then( (response) => {
+                
+                    console.log(response);
+                    setSigninForm({ email: '' })
+                    setMessageNotif({
+                        display: true,
+                        msg: t('send_mail'),
+                        type: 'success'
+                    });
+                })
+                .catch( (error) => {
+                    console.log(error);
+                    setMessageNotif({
+                        display: true,
+                        msg: t('invalid_information'),
+                        type: 'error'
+                    });
+                })
+            }
+            else {
                 setMessageNotif({
                     display: true,
                     msg: t('invalid_information'),

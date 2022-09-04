@@ -9,21 +9,12 @@ import logo from '../../images/hypertube.png';
 import Languages from "../Languages/Languages";
 import logo_42 from "../../images/42.png"
 import logo_github from "../../images/github.png"
+import axios from "axios";
 
 
 
 const EMAIL_REGEX = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,})){1,255}$/;
 const PASSWORD_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{6,255}$/;
-
-const userData = {
-    lastname: "Dupont",
-    firstname: "Jean",
-    username: "Jojo-45",
-    email: "example@test.com",
-    image: "https://avatars.dicebear.com/api/initials/Michel-Dupont.svg",
-    language: "fr",
-    token: "KJHgYIUHG77896hbiuhkljh786tjhnbjh98767"
-};
 
 
 
@@ -53,7 +44,6 @@ const Signin = () => {
 
     const handleSigninFormSubmit = (e) => {
         e.preventDefault();
-        setReactLoading(true);
         setMessageNotif({
             display: false,
             msg: '',
@@ -65,20 +55,28 @@ const Signin = () => {
         {
             if (EMAIL_REGEX.test(signinForm.email) && PASSWORD_REGEX.test(signinForm.password))
             {
-                setSigninForm({
-                    email: '',
-                    password: ''
-                });
-                // add user data in redux
-                dispatch({
-                    type: "user/create",
-                    payload: userData
+                setReactLoading(true);
+                axios.post("users/auth", signinForm)
+                .then( response => {
+                    // add user data in redux
+                    dispatch({
+                        type: "user/create",
+                        payload: response.data.data
+                    })
+                    // add user data in local storage
+                    localStorage.setItem('user', JSON.stringify(response.data.data));
+                    i18next.changeLanguage(response.data.data.language);
+                    setSigninForm({
+                        email: '',
+                        password: ''
+                    });
+                    setReactLoading(false);
+                    navigate('/movies');
                 })
-                // add user data in local storage
-                localStorage.setItem('user', JSON.stringify(userData));
-                i18next.changeLanguage(userData.language);
-                setReactLoading(false);
-                navigate('/movies');
+                .catch( error => {
+                    console.log(error.response.data.message);
+                    setReactLoading(false);
+                })
             } else {
                 setMessageNotif({
                     display: true,
@@ -100,6 +98,14 @@ const Signin = () => {
         msg: '',
         type: ''
     });
+
+    const fortyTwoStrategy = () => {
+        window.location.replace('https://42.fr/');
+    }
+
+    const gitHubStrategy = () => {
+        window.location.replace('https://github.com/hg4dacha');
+    }
 
 
     return (
@@ -124,12 +130,12 @@ const Signin = () => {
                     <div className="omniauth-content">
                         <hr className="hr-omniauth" />
                         <div className="omniauth-btn-content">
-                            <Link to='/' className="button white omniauth-btn ft">
+                            <button onClick={fortyTwoStrategy} className="button white omniauth-btn ft">
                                 <img src={logo_42} alt='logo_42' className="logo-omniauth-42" />
-                            </Link>
-                            <Link to='/' className="button black omniauth-btn gh">
+                            </button>
+                            <button onClick={gitHubStrategy} className="button black omniauth-btn gh">
                                 <img src={logo_github} alt='logo_github' className="logo-omniauth-gh" />
-                            </Link>
+                            </button>
                         </div>
                     </div>
                     <Link to='/forgotten-password' className="forgotten-password">{t('forgotten_password')}</Link>

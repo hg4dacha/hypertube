@@ -29,11 +29,33 @@ const Movies = () => {
     const { t } = useTranslation();
 
     const [movies, setMovies] = useState([])
-    // const [queryResults, setQueryResults] = useState([])
+    const [queryResults, setQueryResults] = useState([])
 
     const [disabled, setDisabled] = useState(false)
 
     const [reactLoading, setReactLoading] = useState(false)
+
+    const [addMovies, setAddMovies] = useState(false);
+    useEffect( () => {
+         if (addMovies) {
+            if (movies.length < queryResults.length)
+            {
+                setReactLoading(true);
+                const moreMovies = [];
+                for(let i = movies.length; i < (movies.length + 50); i++)
+                {
+                    if (i === queryResults.length)
+                    {
+                        break;
+                    }
+                    moreMovies.push(queryResults[i]);
+                }
+                setMovies(prev => [...prev, ...moreMovies]);
+                setReactLoading(false);
+            }
+            setAddMovies(false);
+         }
+    }, [addMovies, movies.length, queryResults])
 
     const observer = useRef();
     const lastMovieElementRef = useCallback(node => {
@@ -41,7 +63,7 @@ const Movies = () => {
         if (observer.current) observer.current.disconnect();
         observer.current = new IntersectionObserver(entries => {
             if (entries[0].isIntersecting) {
-                console.log('VISIBLE !');
+                setAddMovies(true);
             }
         })
         if (node) observer.current.observe(node);
@@ -86,7 +108,7 @@ const Movies = () => {
 
         const imdbKey = 'k_ds0uq7l5';
         
-        const filterUrl = `https://imdb-api.com/API/AdvancedSearch/${imdbKey}?title_type=feature&user_rating=${filterData.minRating},${filterData.maxRating}&release_date=${filterData.minYear}-01-01,${filterData.minYear}-12-31&genres=${filterData.genre}&countries=us&sort=alpha,asc`;
+        const filterUrl = `https://imdb-api.com/API/AdvancedSearch/${imdbKey}?title_type=feature&user_rating=${filterData.minRating},${filterData.maxRating}&release_date=${filterData.minYear}-01-01,${filterData.maxYear}-12-31&genres=${filterData.genre}&countries=us&sort=alpha,asc&count=250`;
 
         const filterResults = [];
 
@@ -103,7 +125,8 @@ const Movies = () => {
                     })
                 )
             })
-            setMovies(filterResults);
+            setQueryResults(filterResults);
+            setMovies(filterResults.slice(0,50));
             setReactLoading(false);
             setDisabled(false);
 
@@ -186,8 +209,8 @@ const Movies = () => {
 
         axios.get(`https://imdb-api.com/${Cookies.get('i18next')}/API/Top250Movies/k_ds0uq7l5`)
         .then( (response) => {
-            // setQueryResults(response.data.items);
-            setMovies(response.data.items);
+            setQueryResults(response.data.items);
+            setMovies(response.data.items.slice(0,50));
             setReactLoading(false);
         })
         .catch( (error) => {

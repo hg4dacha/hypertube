@@ -66,5 +66,11 @@
     "producer": "Produzent",
     "main_actors": "Hauptdarsteller",
     "member_list": "Liste der Mitglieder",
-    "no_comments": "Keine Kommentare"
+    "no_comments": "Keine Kommentare",
+    "current_password": "Aktuelles Passwort",
+    "new_password": "Neues Passwort",
+    "registered": "Herzlichen Glückwunsch, Sie sind angemeldet",
+    "send_mail": "Eine E-Mail wurde an Sie gesendet",
+    "email_already_used": "Bereits verwendete E-Mail",
+    "username_already_used": "Benutzername bereits verwendet"
 }

@@ -8,14 +8,14 @@ import i18next from "i18next";
 import ReactLoading from 'react-loading';
 
 import { avatars } from "./avatars";
-// import axios from "axios";
+import axios from "axios";
 
 
 
 const NAMES_REGEX = /^[a-zA-Z-]{1,30}$/;
 const USERNAME_REGEX = /^[a-zA-Z0-9-_]{1,15}$/;
 const EMAIL_REGEX = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,})){1,255}$/;
-
+const PASSWORD_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{6,255}$/;
 
 
 
@@ -24,6 +24,10 @@ const Profile = () => {
     const user = useSelector((state) => state.user.user);
     const dispatch = useDispatch();
     const navigate = useNavigate();
+
+    const headers = {
+        'x-access-token': user.token
+    }
 
     useEffect(() => {
         if (!user) navigate('/login');
@@ -51,29 +55,57 @@ const Profile = () => {
 
     const handleSubmitProfilePicture = (e) => {
         e.preventDefault();
+        setProfileNotif({
+            display: false,
+            type: '',
+            msg: ''
+        })
 
         if(avatars.includes(profilePicture)) {
-            const newData = {
-                lastname: user.lastname,
-                firstname: user.firstname,
-                username: user.username,
-                email: user.email,
-                image: profilePicture,
-                language: user.language,
-                token: user.token
-            }
-            dispatch({
-                type: "user/update",
-                payload: newData
-            });
-            localStorage.setItem('user', JSON.stringify(newData));
-            setProfileNotif({
-                display: true,
-                type: 'success',
-                msg: t('update_data')
-            });
+
+            setReactLoading(true);
+            axios.put('users/edit', {
+                image: profilePicture
+            }, { headers: headers }
+            )
+            .then( (response) => {
+                
+                const userUpdated = response.data.data;
+                const newData = {
+                    id: userUpdated.id,
+                    lastname: userUpdated.lastname,
+                    firstname: userUpdated.firstname,
+                    username: userUpdated.username,
+                    email: userUpdated.email,
+                    image: userUpdated.image,
+                    language: userUpdated.language,
+                    token: user.token
+                }
+                dispatch({
+                    type: "user/update",
+                    payload: newData
+                });
+                localStorage.setItem('user', JSON.stringify(newData));
+                setReactLoading(false);
+                setProfileNotif({
+                    display: true,
+                    type: 'success',
+                    msg: t('update_data')
+                });
+            })
+            .catch( (error) => {
+                console.log(error);
+                setReactLoading(false);
+                setProfileNotif({
+                    display: true,
+                    type: 'error',
+                    msg: t('invalid_information')
+                })
+            })
         }
     }
+//*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
 
 
 
@@ -94,7 +126,11 @@ const Profile = () => {
 
     const handleSubmitProfileData = (e) => {
         e.preventDefault();
-        setReactLoading(true);
+        setProfileNotif({
+            display: false,
+            type: '',
+            msg: ''
+        })
 
         if(profileData.lastname !== '' &&
            profileData.firstname !== '' &&
@@ -106,26 +142,61 @@ const Profile = () => {
                USERNAME_REGEX.test(profileData.username) &&
                EMAIL_REGEX.test(profileData.email))
             {
-                const newData = {
-                    lastname: profileData.lastname,
-                    firstname: profileData.firstname,
-                    username: profileData.username,
-                    email: profileData.email,
-                    image: user.image,
-                    language: user.language,
-                    token: user.token
-                }
-                dispatch({
-                    type: "user/update",
-                    payload: newData
-                });
-                localStorage.setItem('user', JSON.stringify(newData));
-                setProfileNotif({
-                    display: true,
-                    type: 'success',
-                    msg: t('update_data')
-                });
-                setReactLoading(false);
+                setReactLoading(true);
+                axios.put('users/edit', profileData,
+                    { headers: headers }
+                )
+                .then( (response) => {
+                    console.log(response.data.data);
+
+                    const userUpdated = response.data.data;
+                    const newData = {
+                        id: userUpdated.id,
+                        lastname: userUpdated.lastname,
+                        firstname: userUpdated.firstname,
+                        username: userUpdated.username,
+                        email: userUpdated.email,
+                        image: userUpdated.image,
+                        language: userUpdated.language,
+                        token: user.token
+                    }
+                    dispatch({
+                        type: "user/update",
+                        payload: newData
+                    });
+                    localStorage.setItem('user', JSON.stringify(newData));
+                    setReactLoading(false);
+                    setProfileNotif({
+                        display: true,
+                        type: 'success',
+                        msg: t('update_data')
+                    });
+                })
+                .catch( (error) => {
+                    console.log(error.response.data.message);
+                    if(error.response.data.message === 'ALREADY_REGISTERED_USERNAME') {
+                        setProfileNotif({
+                            display: true,
+                            type: 'error',
+                            msg: t('username_already_used')
+                        })
+                    }
+                    else if(error.response.data.message === 'ALREADY_REGISTERED_EMAIL') {
+                        setProfileNotif({
+                            display: true,
+                            type: 'error',
+                            msg: t('email_already_used')
+                        })
+                    }
+                    else {
+                        setProfileNotif({
+                            display: true,
+                            type: 'error',
+                            msg: t('invalid_information')
+                        })
+                    }
+                    setReactLoading(false);
+                })
             } else {
                 setProfileNotif({
                     display: true,
@@ -179,6 +250,116 @@ const Profile = () => {
 
 
 
+
+                                    // PASSWORD SECTION
+//*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+const [passwords, setPasswords] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmNewPassword: ''
+});
+
+
+const handlePasswordsChange = (e) => {
+    setPasswords({...passwords, [e.target.name]: e.target.value})
+}
+
+const handleSubmitPasswords = (e) => {
+    e.preventDefault();
+    setProfileNotif({
+        display: false,
+        type: 'error',
+        msg: ''
+    })
+
+    if (passwords.currentPassword !== '' &&
+        passwords.newPassword !== '' &&
+        passwords.confirmNewPassword !== '')
+    {
+        if (PASSWORD_REGEX.test(passwords.currentPassword) &&
+            PASSWORD_REGEX.test(passwords.newPassword) &&
+            passwords.newPassword === passwords.confirmNewPassword)
+        {
+            setReactLoading(true);
+            axios.put('users/edit', { password: {
+                currentPassword: passwords.currentPassword,
+                password: passwords.newPassword
+            } }, { headers: headers }
+            )
+            .then( (response) => {
+                console.log(response);
+
+                setPasswords({
+                    currentPassword: '',
+                    newPassword: '',
+                    confirmNewPassword: ''
+                })
+                setProfileNotif({
+                    display: true,
+                    type: 'success',
+                    msg: t('update_data')
+                });
+                setReactLoading(false);
+            })
+            .catch( (error) => {
+                console.log(error);
+                setReactLoading(false);
+                setProfileNotif({
+                    display: true,
+                    type: 'error',
+                    msg: t('invalid_information')
+                })
+            })
+        }
+        else {
+            setProfileNotif({
+                display: true,
+                type: 'error',
+                msg: t('invalid_information')
+            })
+        }
+    }
+    else {
+        setProfileNotif({
+            display: true,
+            type: 'error',
+            msg: t('incomplete_fields')
+        })
+    }
+}
+
+
+const passwordsInputs = [
+    {
+        id: 'currentPassword',
+        label: t('current_password'),
+        value: passwords.currentPassword,
+        type: 'password',
+        maxLength: "255"
+    },
+    {
+        id: 'newPassword',
+        label: t('new_password'),
+        value: passwords.newPassword,
+        type: 'password',
+        maxLength: "255"
+    },
+    {
+        id: 'confirmNewPassword',
+        label: t('confirm_password'),
+        value: passwords.confirmNewPassword,
+        type: 'password',
+        maxLength: "255"
+    }
+]
+
+//*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
+
+
+
+
+
                             // LANGUAGE SECTION
 //*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
     const [favoriteLanguage, setFavoriteLanguage] = useState({
@@ -217,24 +398,46 @@ const Profile = () => {
             else if(favoriteLanguage.de === true) {
                 i18next.changeLanguage('de');
             }
-            const newData = {
-                lastname: user.lastname,
-                firstname: user.firstname,
-                username: user.username,
-                email: user.email,
-                image: user.image,
-                language: favoriteLanguage.en ? 'en' : (favoriteLanguage.fr ? 'fr' : 'de'),
-                token: user.token
-            }
-            dispatch({
-                type: "user/update",
-                payload: newData
-            });
-            localStorage.setItem('user', JSON.stringify(newData));
-            setProfileNotif({
-                display: true,
-                type: 'success',
-                msg: t('update_data')
+
+            setReactLoading(true);
+            axios.put('users/edit', {
+                language: favoriteLanguage.en ? 'en' : (favoriteLanguage.fr ? 'fr' : 'de')
+            }, { headers: headers }
+            )
+            .then( (response) => {
+                console.log(response);
+                
+                const userUpdated = response.data.data;
+                const newData = {
+                    id: userUpdated.id,
+                    lastname: userUpdated.lastname,
+                    firstname: userUpdated.firstname,
+                    username: userUpdated.username,
+                    email: userUpdated.email,
+                    image: userUpdated.image,
+                    language: userUpdated.language,
+                    token: user.token
+                }
+                dispatch({
+                    type: "user/update",
+                    payload: newData
+                });
+                localStorage.setItem('user', JSON.stringify(newData));
+                setReactLoading(false);
+                setProfileNotif({
+                    display: true,
+                    type: 'success',
+                    msg: t('update_data')
+                });
+            })
+            .catch( (error) => {
+                console.log(error);
+                setReactLoading(false);
+                setProfileNotif({
+                    display: true,
+                    type: 'error',
+                    msg: t('invalid_information')
+                })
             })
         }
         else {
@@ -286,7 +489,13 @@ const Profile = () => {
     }, [user])
 
 
-
+    const hideNotif = () => {
+        setProfileNotif({
+            display: false,
+            type: '',
+            msg: ''
+        })
+    }
 
     return (
         <div>
@@ -296,7 +505,7 @@ const Profile = () => {
             <div className="profile-cont">
                 {
                     profileNotif.display &&
-                    <div className={`profile-notif ${profileNotif.type}`}>{profileNotif.msg}</div>
+                    <div onClick={hideNotif} className={`profile-notif ${profileNotif.type}`}>{profileNotif.msg}</div>
                 }
                 <form className="profile-picture-form" onSubmit={handleSubmitProfilePicture}>
                     <div className='profile-picture-content'>
@@ -338,6 +547,27 @@ const Profile = () => {
                                     placeholder='...'
                                     maxLength={data.maxLength}
                                     onChange={handleProfileDataChange}
+                                    value={data.value}
+                                    autoComplete="off"
+                                    className='info-profile-input'
+                                />
+                            </div>
+                        )
+                    })}
+                    <button type='submit' className="button white profile-btn">{t('button_confirm')}</button>
+                </form>
+                <hr className="profile-hr"/>
+                <form className="info-data-form" onSubmit={handleSubmitPasswords}>
+                    {passwordsInputs.map( (data) => {
+                        return (
+                            <div key={data.id} className='info-block'>
+                                <label>{data.label}</label>
+                                <input
+                                    type={data.type}
+                                    name={data.id}
+                                    placeholder='...'
+                                    maxLength={data.maxLength}
+                                    onChange={handlePasswordsChange}
                                     value={data.value}
                                     autoComplete="off"
                                     className='info-profile-input'

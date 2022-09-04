@@ -432,16 +432,22 @@ color: white;
 }
 
 .profile-notif {
-  position: absolute;
-  top: 6.8rem;
+  position: fixed;
+  top: 10%;
+  z-index: 100;
+  padding: 1rem;
+  border-radius: 5px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .profile-notif.error {
-  color: red;
+  background-color: red;
 }
 
 .profile-notif.success {
-  color: green;
+  background-color: green;
 }
 
 .profile-picture-content {
@@ -540,7 +546,7 @@ color: white;
 }
 
 .info-block {
-  width: 35%;
+  width: 50%;
   display: flex;
   align-items: center;
   justify-content: space-between;

@@ -9,12 +9,13 @@ import Movie from './components/Movie/Movie';
 import Users from './components/Users/Users';
 import Profile from './components/Profile/Profile';
 import NotFound from './components/NotFound/NotFound';
-// import axios from 'axios'
+import axios from 'axios'
 import { Provider } from 'react-redux';
 import { store } from './redux';
 
-// axios.defaults.baseURL = "http://localhost:5000/hypertube/api/";
+axios.defaults.baseURL = "http://localhost:5000/";
 // axios.defaults.withCredentials = true;
+// axios.defaults.headers.common['x-access-token'] = `Bearer ${value.user.AUTH_TOKEN}`;
 
 function App() {
   return (

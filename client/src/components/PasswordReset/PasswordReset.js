@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Link } from 'react-router-dom';
+import axios from "axios";
 
 import logo from '../../images/hypertube.png';
 import Languages from "../Languages/Languages";
@@ -10,6 +12,9 @@ const PASSWORD_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s
 
 
 const PasswordReset = () => {
+
+    const params = useParams();
+    const navigate = useNavigate();
 
     const { t } = useTranslation();
 
@@ -41,8 +46,25 @@ const PasswordReset = () => {
             if (PASSWORD_REGEX.test(passwordResetForm.newPassword) &&
                 passwordResetForm.newPassword === passwordResetForm.confirmNewPassword)
             {
-
-            } else {
+                // A voir! car meme requete que le password de la page profile
+                axios.put('users/password', {
+                    newPassword: passwordResetForm.newPassword,
+                    userId: params.userid,
+                    tokenPassword: params.token
+                })
+                .then( (response) => {
+                    console.log(response);
+                    navigate('/login');
+                })
+                .catch( (error) => {
+                    setMessageNotif({
+                        display: true,
+                        msg: t('invalid_information'),
+                        type: 'error'
+                    });
+                })
+            }
+            else {
                 setMessageNotif({
                     display: true,
                     msg: t('invalid_information'),
