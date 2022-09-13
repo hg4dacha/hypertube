@@ -50,7 +50,7 @@ const Filter = ({
                 <div className="sliders-content">
                     <Sliders
                         tittle={<CgCalendarTwo color="black"/>}
-                        basicMinValue={1900}
+                        basicMinValue={1980}
                         basicMaxValue={2022}
                         step={1}
                         minValueID="minYear"

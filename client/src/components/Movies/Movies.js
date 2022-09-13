@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
 import ReactLoading from 'react-loading';
-import Cookies from 'js-cookie';
 import { BiSearch } from 'react-icons/bi';
 import axios from "axios";
 
 import Header from "../Header/Header";
 import Filter from "./Filter";
 import Thumbnail from "./Thumbnail";
+import noResult from '../../images/no-result.png';
 
 
 
@@ -26,10 +26,15 @@ const Movies = () => {
         if (!user) navigate('/login');
     }, [navigate, user])
 
+    const headers = {
+        'x-access-token': user && user.token
+    }
+
     const { t } = useTranslation();
 
-    const [movies, setMovies] = useState([])
-    const [queryResults, setQueryResults] = useState([])
+    const [movies, setMovies] = useState(false);
+    const [queryResults, setQueryResults] = useState([]);
+    const [moviesViewed, setMoviesViewed] = useState([]);
 
     const [disabled, setDisabled] = useState(false)
 
@@ -80,7 +85,7 @@ const Movies = () => {
         setFilterSection(!filterSection);
     }
 
-    const [movieYears, setMovieYears] = useState({ minimumValue: '1900', maximumValue: '2022' })
+    const [movieYears, setMovieYears] = useState({ minimumValue: '1980', maximumValue: '2022' })
 
     const [movieRating, setMovieRating] = useState({ minimumValue: '0', maximumValue: '10' })
 
@@ -98,40 +103,16 @@ const Movies = () => {
         setFilterSection(false);
         setDisabled(true);
 
-        const filterData = {
-            genre: genre,
-            minYear: movieYears.minimumValue,
-            maxYear: movieYears.maximumValue,
-            minRating: movieRating.minimumValue,
-            maxRating: movieRating.maximumValue
-        }
-
-        const imdbKey = 'k_ds0uq7l5';
-        
-        const filterUrl = `https://imdb-api.com/API/AdvancedSearch/${imdbKey}?title_type=feature&user_rating=${filterData.minRating},${filterData.maxRating}&release_date=${filterData.minYear}-01-01,${filterData.maxYear}-12-31&genres=${filterData.genre}&countries=us&sort=alpha,asc&count=250`;
-
-        const filterResults = [];
-
-        axios.get(filterUrl)
+        axios.get(`movies?genre=${genre}&minRating=${movieRating.minimumValue}&maxRating=${movieRating.maximumValue}&minYear=${movieYears.minimumValue}&maxYear=${movieYears.maximumValue}`, { headers: headers })
         .then( (response) => {
-            response.data.results.map( (result) => {
-                    return (
-                    filterResults.push({
-                        id: result.id,
-                        title: result.title,
-                        image: result.image,
-                        year: result.description.replace(/\D/g, "").slice(0,4),
-                        imDbRating: ''
-                    })
-                )
-            })
-            setQueryResults(filterResults);
-            setMovies(filterResults.slice(0,50));
+            setQueryResults(response.data.movies);
+            setMovies(response.data.movies.slice(0,50));
             setReactLoading(false);
             setDisabled(false);
-
         })
         .catch( (error) => {
+            setMovies([]);
+            if(axios.isCancel(error)) return;
             setReactLoading(false);
             setDisabled(false);
         })
@@ -153,33 +134,16 @@ const Movies = () => {
             setReactLoading(true);
             setDisabled(true);
 
-            const searchData = {
-                search: search
-            }
-
-            const imdbKey = 'k_ds0uq7l5';
-
-            const searchUrl = `https://imdb-api.com/${Cookies.get('i18next')}/API/SearchMovie/${imdbKey}/${searchData.search}`;
-
-            const searchResults = [];
-
-            axios.get(searchUrl)
+            axios.get(`movies?search=${search}`, { headers: headers })
             .then( (response) => {
-                response.data.results.map( (result) => {
-                    return (
-                        searchResults.push({
-                            id: result.id,
-                            title: result.title,
-                            image: result.image,
-                            year: result.description.replace(/\D/g, "").slice(0,4),
-                            imDbRating: ''
-                        }))
-                })
-                setMovies(searchResults);
+                setQueryResults(response.data.movies);
+                setMovies(response.data.movies.slice(0,50));
                 setReactLoading(false);
                 setDisabled(false);
             })
             .catch( (error) => {
+                setMovies([]);
+                if(axios.isCancel(error)) return;
                 setReactLoading(false);
                 setDisabled(false);
             })
@@ -207,37 +171,24 @@ const Movies = () => {
 
         setReactLoading(true);
 
-        axios.get(`https://imdb-api.com/${Cookies.get('i18next')}/API/Top250Movies/k_ds0uq7l5`)
+        axios.get('movies', { headers: headers })
         .then( (response) => {
-            setQueryResults(response.data.items);
-            setMovies(response.data.items.slice(0,50));
+            setQueryResults(response.data.movies);
+            setMovies(response.data.movies.slice(0,50));
+            setMoviesViewed(response.data.moviesViewed);
             setReactLoading(false);
         })
         .catch( (error) => {
-            if (axios.isCancel(error)) return;
+            setMovies([]);
+            if(axios.isCancel(error)) return;
             setReactLoading(false);
         })
-
-        // axios.get(`https://imdb-api.com/${Cookies.get('i18next')}/API/MostPopularMovies/k_ds0uq7l5`)
-        // .then( (response) => {
-        //     setMovies(prevState => [...prevState, ...response.data.items]);
-        //     setReactLoading(false);
-        // })
-        // .catch( (error) => {
-        //     setReactLoading(false);
-        // })
-
-        return () => {
-            setMovies([]);
-        }
-
+        
+    // eslint-disable-next-line
     }, [])
-
-
-
-
-
 //*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
+
     return (
         <Fragment>
             {reactLoading &&
@@ -266,35 +217,42 @@ const Movies = () => {
                         </form>
                     </div>
 
-                    {movies.length > 0 && movies.map( (movie, index) => {
-                        if (movies.length === index + 1) {
-                            return (
-                                <Thumbnail
-                                    lastMovieElementRef={lastMovieElementRef}
-                                    key={index}
-                                    id={movie.id}
-                                    title={movie.title}
-                                    picture={movie.image}
-                                    year={movie.year}
-                                    rating={movie.imDbRating}
-                                    vue={true}
-                                />
-                            )
-                        }
-                        else {
-                            return (
-                                <Thumbnail
-                                    key={index}
-                                    id={movie.id}
-                                    title={movie.title}
-                                    picture={movie.image}
-                                    year={movie.year}
-                                    rating={movie.imDbRating}
-                                    vue={true}
-                                />
-                            )
-                        }
-                    })}
+                    {
+                        movies.length === 0 ?
+                        <div className='no-result'>
+                            <img src={noResult} alt='no-result-icon' className='no-result-icon' />
+                            Aucun résultat
+                        </div> :
+                        movies !== false && movies.map( (movie, index) => {
+                            if (movies.length === index + 1) {
+                                return (
+                                    <Thumbnail
+                                        lastMovieElementRef={lastMovieElementRef}
+                                        key={index}
+                                        id={movie.id}
+                                        title={movie.title}
+                                        picture={movie.image}
+                                        year={movie.year}
+                                        rating={movie.imDbRating}
+                                        vue={moviesViewed.includes(movie.id)}
+                                    />
+                                )
+                            }
+                            else {
+                                return (
+                                    <Thumbnail
+                                        key={index}
+                                        id={movie.id}
+                                        title={movie.title}
+                                        picture={movie.image}
+                                        year={movie.year}
+                                        rating={movie.imDbRating}
+                                        vue={moviesViewed.includes(movie.id)}
+                                    />
+                                )
+                            }
+                        })
+                    }
 
                 </div>
             </div>

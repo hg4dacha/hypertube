@@ -3,9 +3,36 @@ const express = require("express");
 // var app = require("../app");
 var http = require("http");
 require("colors");
+const createError = require("http-errors");
 // const path = require("path");
 // const cookieParser = require("cookie-parser");
-// const cors = require("cors");
+const cors = require("cors");
+const passport = require("passport");
+const User = require("./schemas/user");
+// Connexion to Database
+require('dotenv').config();
+const mongoose = require("mongoose");
+const insertUsers = require("./hypertubeUsers");
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+// mongoose.set("useNewUrlParser", true);
+// mongoose.set("useFindAndModify", false);
+// mongoose.set("useCreateIndex", true);
+// mongoose.set("useUnifiedTopology", true);
+mongoose.connect(
+  process.env.MONGO_URI,
+  {
+    useUnifiedTopology: true,
+    useNewUrlParser: true
+  }
+); 
+
+let db = mongoose.connection;
+db.on("error", console.error.bind(console, "connection error:"));
+db.once("open", async () => {
+  console.log("Database connected!");
+//   await insertUsers();
+});
 // const fileUpload = require("express-fileupload");
 // const morganMiddleware = require("./config/morgan");
 // const helmet = require("helmet");
@@ -23,6 +50,8 @@ require("colors");
 //     launchRequestBackground();
 // }
 
+// for insert users
+
 
 
 
@@ -37,7 +66,7 @@ require("colors");
 
 
 const app = express();
-
+app.use(cookieParser());
 
 
 
@@ -66,7 +95,7 @@ const app = express();
  * Get port from environment and store in Express.
  */
 
- var port = normalizePort("3000");
+ var port = normalizePort("5000");
  app.set("port", port);
  
  /**
@@ -151,6 +180,23 @@ const app = express();
 
 
 
+app.use(cors());
+
+app.use(session({
+    resave: false,
+    saveUninitialized: true,
+    secret: 'SECRET' 
+  }));
+
+// passport
+app.use(passport.initialize());
+app.use(passport.session());
+
+// passport.use(User.createStrategy());
+// passport.serializeUser(User.serializeUser());
+// passport.deserializeUser(User.deserializeUser());
+// app.use("/auth", require("./routes/auth/omniauth"));
+
 
 // app.set("trust proxy", true);
 // app.use(promMid({
@@ -194,6 +240,18 @@ app.use(express.json({ limit: "50mb" }));
 // app.use("/1.0/", version1Router);
 const version1Router = require("./routes/routing");
 app.use("/", version1Router);
+
+app.use(function (req, res, next) {
+    next(createError(404));
+});
+
+// ### HANDLING ERROR FOR EVERY CALL OF next(createError(code, message));
+// noinspection JSCheckFunctionSignatures
+app.use(function handlingError(err, req, res, next) {
+    res.status(err.status || 500);
+    res.json({ response: "ko", message: err.message });
+});
+// ### END OF HANDLING ERROR FOR EVERY CALL OF next(createError(code, message));
 // app.use("/1.1/", version1Router_1_1);
 
 // app.use(function (req, res, next) {
@@ -208,5 +266,7 @@ app.use("/", version1Router);
 
 // // noinspection JSCheckFunctionSignatures
 // app.use(handlingError);
+
+
 
 module.exports = app;

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Home from './components/Home/Home';
 import Signin from './components/Signin/Signin';
+import Oauth from './components/Oauth/Oauth';
 import ForgottenPassword from './components/ForgottenPassword/ForgottenPassword';
 import PasswordReset from './components/PasswordReset/PasswordReset';
 import Movies from './components/Movies/Movies';
@@ -24,6 +25,7 @@ function App() {
         <Routes>
           <Route path='/' element={<Home/>} />
           <Route path='/login' element={<Signin/>} />
+          <Route path='/oauth' element={<Oauth/>} />
           <Route path='/forgotten-password' element={<ForgottenPassword/>} />
           <Route path='/password-reset/:userid/:token' element={<PasswordReset/>} />
           <Route path='/movies' element={<Movies/>} />
@@ -33,6 +35,7 @@ function App() {
           <Route path='/not-found' element={<NotFound/>} />
           <Route path='*' element={<Navigate replace to='/not-found'/>} />
         </Routes>
+        <footer className='footer'>HYPERTUBE <span className='footer-42'>42</span> PROJECT 2022</footer>
       </Provider>
     </BrowserRouter>
   );

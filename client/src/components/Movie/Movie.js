@@ -1,49 +1,17 @@
 import React, { Fragment, useEffect, useState } from "react";
 import {useParams, useNavigate} from 'react-router-dom';
+import Player from "./Player";
 import { useSelector } from "react-redux";
 import ReactLoading from 'react-loading';
 import { useTranslation } from "react-i18next";
 import {ImYoutube2} from 'react-icons/im';
 import {VscStarEmpty} from 'react-icons/vsc';
-import Cookies from 'js-cookie';
+import {BsPlayFill} from 'react-icons/bs';
+import {BiBlock} from 'react-icons/bi';
 import axios from "axios";
 
 import Header from "../Header/Header";
 
-
-
-// const commentsList = [
-//   {
-//     userId: Math.random(),
-//     userImage: 'https://avatars.dicebear.com/api/bottts/655352758863402.svg?backgroundColor=%23FFFF99',
-//     userName: "user-432423",
-//     userComment: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
-//   },
-//   {
-//     userId: Math.random(),
-//     userImage: 'https://avatars.dicebear.com/api/bottts/666200122851125.svg?backgroundColor=%23E6B333',
-//     userName: "user-432423",
-//     userComment: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
-//   },
-//   {
-//     userId: Math.random(),
-//     userImage: 'https://avatars.dicebear.com/api/bottts/156410818583639.svg?backgroundColor=%23B34D4D',
-//     userName: "user-432423",
-//     userComment: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
-//   },
-//   {
-//     userId: Math.random(),
-//     userImage: 'https://avatars.dicebear.com/api/bottts/17628617998533.svg?backgroundColor=%2366991A',
-//     userName: "user-432423",
-//     userComment: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
-//   },
-//   {
-//     userId: Math.random(),
-//     userImage: 'https://avatars.dicebear.com/api/bottts/561648701770521.svg?backgroundColor=%23FF1A66',
-//     userName: "user-432423",
-//     userComment: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
-//   }
-// ]
 
 
 const Movie = () => {
@@ -56,14 +24,44 @@ const Movie = () => {
     if (!user) navigate('/login');
   }, [navigate, user])
 
+  const headers = {
+    'x-access-token': user && user.token
+  }
+
   const { t } = useTranslation();
 
   const [reactLoading, setReactLoading] = useState(false);
 
   const [movie, setMovie] = useState(null);
-  const [comment, setComment] = useState();
-  const [comments, setComments] = useState('');
+  const [torrent, setTorrent] = useState(null)
+  const [comment, setComment] = useState('');
+  const [comments, setComments] = useState(null);
+  const [download, setDownload] = useState(false);
 
+
+
+
+
+
+                              // TORRENTS
+//*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+  const handleDownload = () => {
+    setDownload(true);
+  }
+
+
+
+
+
+
+//*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
+
+
+
+
+                            // COMMENTS
+//*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
   const handleComment = (e) => {
     setComment(e.target.value);
   }
@@ -73,34 +71,52 @@ const Movie = () => {
 
     if(comment !== '' && comment.length <= 1000)
     {
-      setComments(prevState => [...prevState, {
-        userId: Math.random(),
-        userImage: 'https://avatars.dicebear.com/api/bottts/816383102966448.svg?backgroundColor=%23E666FF',
-        userName: "user-432423",
-        userComment: comment
-      }]);
-      setComment('');
+      axios.post('comments', {
+        movieId: params.movieId,
+        comment: comment
+      } , { headers: headers })
+      .then( (response) => {
+
+        setComments(prevState => [...prevState, {
+          userId: user.id,
+          userImage: user.image,
+          username: user.username,
+          comment: comment
+        }]);
+        setComment('');
+
+      })
+      .catch( (error) => {
+
+      })
     }
   }
+//*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
+
 
 
   useEffect( () => {
 
     setReactLoading(true);
-    axios.get(`https://imdb-api.com/${Cookies.get('i18next')}/API/Title/k_ds0uq7l5/${params.movieId}/FullCast`)
-    .then( (response) => {
-      setMovie(response.data);
+
+    axios.get(`movies/data?movieId=${params.movieId}`, { headers: headers })
+    .then( (response) => { console.log(response.data)
+      setMovie(response.data.infos);
+      setTorrent(response.data.torrent);
+      setComments(response.data.comments);
       setReactLoading(false);
     })
-    .catch( (error) => {
+    .catch( error => {
       navigate('/not-found');
     })
 
     return () => {
       setMovie([]);
     }
-  
-  }, [navigate, params.movieId])
+
+  // eslint-disable-next-line
+  }, [])
 
 
 
@@ -109,12 +125,13 @@ const Movie = () => {
             {reactLoading &&
             <ReactLoading className="react-loading" type='bars' color='#E50914' height={100} width={100} />}
           <Header />
+          {/* ↓↓↓ MOVIE INFOS ↓↓↓ */}
           <div className="movie-content">
             {movie &&
             <div className="all-movie-data-content">
               <div className="movie-tittle-content">
-                <h1 className="movie-tittle">{movie.title}</h1>
-                <a href={`https://www.youtube.com/watch?v=${params.movieId}`} className="movie-yt-link"><ImYoutube2 className="movie-yt" /></a>
+                <h1 className="movie-tittle">{movie.title && movie.title}</h1>
+                {movie.title && <a href={`https://www.youtube.com/watch?v=${params.movieId}`} className="movie-yt-link"><ImYoutube2 className="movie-yt" /></a>}
               </div>
               <div className="movie-info">
                 {movie.image && <img src={movie.image} alt='movie' className="movie-image" />}
@@ -123,31 +140,39 @@ const Movie = () => {
                   <div>{movie.genres && movie.genres}</div>
                   <div>{movie.year && movie.year}</div>
                   <div>{movie.imDbRating && `${movie.imDbRating}`}</div>
-                  <p>
-                    {Cookies.get('i18next') === 'en' ?
-                    movie.plot :
-                    movie.plotLocal}
-                  </p>
+                  <p>{movie.plot}</p>
                   <div>{movie.directors && `${t('director')}: ${movie.directors}`}</div>
                   <div>{movie.writers && `${t('producer')}: ${movie.writers}`}</div>
                   <div>{movie.stars && `${t('main_actors')}: ${movie.stars}`}</div>
                 </div>
               </div>
             </div>}
-            <div className="video-source-content">
-              <video
-                className="video-source"
-                controls
-                preload="auto"
-                onPlay={() => console.log("PLAY!")}
-              >
-                <source src='' type="video/webm" />
-              </video>
-            </div>
+            {/* ↓↓↓ TORRENT DOWNLOAD ↓↓↓ */}
+            {
+              torrent === null || download ? null :
+              <div className="torrents-content">
+                {
+                  torrent.yts.length > 0 || torrent.torrentProject.length > 0 ?
+                    <button
+                      onClick={handleDownload}
+                      className="button-play"
+                    >
+                      {t('watch')}
+                      <BsPlayFill className="icon-play" />
+                    </button> :
+                  <div className="unavailable-movie"><BiBlock />{t('unavailable_movie')}</div>
+                }
+              </div>
+            }
+            {/* ↓↓↓ VIDEO PLAYER ↓↓↓ */}
+            {download && <Player/>}
+            {/* ↓↓↓ COMMENT FROM ↓↓↓ */}
+            {
+            comments === null ? null :
             <div className="comments-content">
               <form className='form-comment' onSubmit={handleNewComment}>
                 <div className="text-and-button-content">
-                  <div style={{position: 'relative'}}>
+                  <div className="text-and-button-content-children">
                     <div className="write-comment">{t('write_comment')}</div>
                     <textarea
                         value={comment}
@@ -165,30 +190,39 @@ const Movie = () => {
                   </button>
                 </div>
               </form>
-              <div className="users-comments-content">
-                {
-                  comments.length < 1 ?
-                  <div className="no-comments"><VscStarEmpty style={{marginRight: '3px'}}/>{t('no_comments')}</div> :
-                  comments.slice(0).reverse().map( (comment) => {
+              {/* ↓↓↓ DISPLAYING COMMENTS ↓↓↓ */}
+              {
+                comments.length < 1 ?
+                <div className="users-comments-content">
+                  <div className="no-comments">
+                    <VscStarEmpty style={{marginRight: '3px'}}/>
+                    {t('no_comments')}
+                  </div>
+                </div> :
+                <div className="users-comments-content">
+                  {comments.slice(0).reverse().map( (comment, index) => {
                     return (
-                      <div key={comment.userId} className="comment-container">
+                      <div key={index} className="comment-container">
                         <div className="user-comment-info">
                           <div className='navbar-pp-content'>
                               <img src={comment.userImage} alt='user' className='navbar-pp-img'/>
                           </div>
                           <div className="user-comment-username">
-                            {comment.userName}
+                            {comment.username}
                           </div>
                         </div>
                         <div className="user-comment">
-                          {comment.userComment}
+                          {comment.comment}
                         </div>
                       </div>
+                      
                     )
-                  })
-                }
-              </div>
-            </div>
+                  })}
+                </div>
+              }
+            </div>}
+
+
           </div>
         </Fragment>
     )

@@ -72,5 +72,7 @@
     "registered": "Félicitations, vous êtes inscrits",
     "send_mail": "Un mail vous a été envoyé",
     "email_already_used": "Email déjà utilisé",
-    "username_already_used": "Nom d'utilisateur déjà utilisé"
+    "username_already_used": "Nom d'utilisateur déjà utilisé",
+    "unavailable_movie": "Film non disponible",
+    "watch": "Visionner"
 }

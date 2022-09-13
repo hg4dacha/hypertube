@@ -72,5 +72,7 @@
     "registered": "Congratulations, you are registered",
     "send_mail": "An email has been sent to you",
     "email_already_used": "Email already used",
-    "username_already_used": "Username already used"
+    "username_already_used": "Username already used",
+    "unavailable_movie": "Unavailable movie",
+    "watch": "Watch"
 }

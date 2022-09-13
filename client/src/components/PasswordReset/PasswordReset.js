@@ -46,14 +46,16 @@ const PasswordReset = () => {
             if (PASSWORD_REGEX.test(passwordResetForm.newPassword) &&
                 passwordResetForm.newPassword === passwordResetForm.confirmNewPassword)
             {
-                // A voir! car meme requete que le password de la page profile
                 axios.put('users/password', {
                     newPassword: passwordResetForm.newPassword,
                     userId: params.userid,
                     tokenPassword: params.token
                 })
                 .then( (response) => {
-                    console.log(response);
+                    setPasswordResetForm({
+                        newPassword: '',
+                        confirmNewPassword: ''
+                    });
                     navigate('/login');
                 })
                 .catch( (error) => {

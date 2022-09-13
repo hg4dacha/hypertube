@@ -42,8 +42,6 @@ const ForgottenPassword = () => {
             {
                 axios.post('users/password', signinForm)
                 .then( (response) => {
-                
-                    console.log(response);
                     setSigninForm({ email: '' })
                     setMessageNotif({
                         display: true,

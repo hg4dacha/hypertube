@@ -26,7 +26,7 @@ const Profile = () => {
     const navigate = useNavigate();
 
     const headers = {
-        'x-access-token': user.token
+        'x-access-token': user && user.token
     }
 
     useEffect(() => {

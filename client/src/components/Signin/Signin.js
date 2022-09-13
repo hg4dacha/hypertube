@@ -4,6 +4,7 @@ import i18next from "i18next";
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
 import ReactLoading from 'react-loading';
+import Cookies from 'js-cookie';
 
 import logo from '../../images/hypertube.png';
 import Languages from "../Languages/Languages";
@@ -66,6 +67,7 @@ const Signin = () => {
                     // add user data in local storage
                     localStorage.setItem('user', JSON.stringify(response.data.data));
                     i18next.changeLanguage(response.data.data.language);
+                    Cookies.set('accessKey', response.data.accessKey, { expires: 1 });
                     setSigninForm({
                         email: '',
                         password: ''
@@ -100,11 +102,11 @@ const Signin = () => {
     });
 
     const fortyTwoStrategy = () => {
-        window.location.replace('https://42.fr/');
+        window.location.replace('http://localhost:5000/auth/42');
     }
 
     const gitHubStrategy = () => {
-        window.location.replace('https://github.com/hg4dacha');
+        window.location.replace('http://localhost:5000/auth/github');
     }
 
 

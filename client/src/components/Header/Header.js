@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Cookies from 'js-cookie';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
@@ -21,7 +22,8 @@ const Header = () => {
         dispatch({
             type: "user/reset"
         })
-        localStorage.removeItem('user');
+        localStorage.getItem('user') !== null && localStorage.removeItem('user');
+        Cookies.get('accessKey') !== undefined && Cookies.remove('accessKey');
         navigate('/login');
     }
 

@@ -72,5 +72,7 @@
     "registered": "Herzlichen Glückwunsch, Sie sind angemeldet",
     "send_mail": "Eine E-Mail wurde an Sie gesendet",
     "email_already_used": "Bereits verwendete E-Mail",
-    "username_already_used": "Benutzername bereits verwendet"
+    "username_already_used": "Benutzername bereits verwendet",
+    "unavailable_movie": "Nicht verfügbarer Film",
+    "watch": "Siehe"
 }
