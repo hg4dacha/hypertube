@@ -33,27 +33,28 @@ const Movie = () => {
   const [reactLoading, setReactLoading] = useState(false);
 
   const [movie, setMovie] = useState(null);
-  const [torrent, setTorrent] = useState(null)
+  const [torrents, setTorrents] = useState(null)
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState(null);
   const [download, setDownload] = useState(false);
+  const [stream, setStream] = useState(false);
 
 
 
 
 
 
-                              // TORRENTS
+                              // torrents
 //*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
   const handleDownload = () => {
-    setDownload(true);
+
+    if (torrents.yts || torrents.torrentProject) {
+      const torrent = torrents.yts || torrents.torrentProject;
+      setStream(`http://localhost:5000/movies/${params.movieId}/${user.id}/${torrent[0].source}?magnet=${torrent[0].magnet}`);
+      setDownload(true);
+    }
+  
   }
-
-
-
-
-
-
 //*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 
@@ -101,9 +102,9 @@ const Movie = () => {
     setReactLoading(true);
 
     axios.get(`movies/data?movieId=${params.movieId}`, { headers: headers })
-    .then( (response) => { console.log(response.data)
+    .then( (response) => {
       setMovie(response.data.infos);
-      setTorrent(response.data.torrent);
+      setTorrents(response.data.torrents);
       setComments(response.data.comments);
       setReactLoading(false);
     })
@@ -127,32 +128,32 @@ const Movie = () => {
           <Header />
           {/* ↓↓↓ MOVIE INFOS ↓↓↓ */}
           <div className="movie-content">
-            {movie &&
-            <div className="all-movie-data-content">
-              <div className="movie-tittle-content">
-                <h1 className="movie-tittle">{movie.title && movie.title}</h1>
-                {movie.title && <a href={`https://www.youtube.com/watch?v=${params.movieId}`} className="movie-yt-link"><ImYoutube2 className="movie-yt" /></a>}
-              </div>
-              <div className="movie-info">
-                {movie.image && <img src={movie.image} alt='movie' className="movie-image" />}
-                <div className="movie-description">
-                  <div>{movie.runtimeMins && `${movie.runtimeMins} min`}</div>
-                  <div>{movie.genres && movie.genres}</div>
-                  <div>{movie.year && movie.year}</div>
-                  <div>{movie.imDbRating && `${movie.imDbRating}`}</div>
-                  <p>{movie.plot}</p>
-                  <div>{movie.directors && `${t('director')}: ${movie.directors}`}</div>
-                  <div>{movie.writers && `${t('producer')}: ${movie.writers}`}</div>
-                  <div>{movie.stars && `${t('main_actors')}: ${movie.stars}`}</div>
+            { movie &&
+              <div className="all-movie-data-content">
+                <div className="movie-tittle-content">
+                  <h1 className="movie-tittle">{movie.title && movie.title}</h1>
+                  {movie.title && <a href={`https://www.youtube.com/watch?v=${params.movieId}`} className="movie-yt-link"><ImYoutube2 className="movie-yt" /></a>}
                 </div>
-              </div>
-            </div>}
+                <div className="movie-info">
+                  {movie.image && <img src={movie.image} alt='movie' className="movie-image" />}
+                  <div className="movie-description">
+                    <div>{movie.runtimeMins && `${movie.runtimeMins} min`}</div>
+                    <div>{movie.genres && movie.genres}</div>
+                    <div>{movie.year && movie.year}</div>
+                    <div>{movie.imDbRating && `${movie.imDbRating}`}</div>
+                    <p>{movie.plot}</p>
+                    <div>{movie.directors && `${t('director')}: ${movie.directors}`}</div>
+                    <div>{movie.writers && `${t('producer')}: ${movie.writers}`}</div>
+                    <div>{movie.stars && `${t('main_actors')}: ${movie.stars}`}</div>
+                  </div>
+                </div>
+              </div> }
             {/* ↓↓↓ TORRENT DOWNLOAD ↓↓↓ */}
             {
-              torrent === null || download ? null :
+              torrents === null || download ? null :
               <div className="torrents-content">
                 {
-                  torrent.yts.length > 0 || torrent.torrentProject.length > 0 ?
+                  torrents.yts.length > 0 || torrents.torrentProject.length > 0 ?
                     <button
                       onClick={handleDownload}
                       className="button-play"
@@ -165,7 +166,15 @@ const Movie = () => {
               </div>
             }
             {/* ↓↓↓ VIDEO PLAYER ↓↓↓ */}
-            {download && <Player/>}
+            {
+              (download && stream) &&
+              <Player
+                headers={headers}
+                download={download}
+                movieId={params.movieId}
+                stream={stream}
+              />
+            }
             {/* ↓↓↓ COMMENT FROM ↓↓↓ */}
             {
             comments === null ? null :

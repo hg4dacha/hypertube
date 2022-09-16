@@ -154,7 +154,7 @@ async function getMovieData(req, res, next) {
             
             return res.status(200).json({
                 infos: infos,
-                torrent: {
+                torrents: {
                     yts: ytsTorrent,
                     torrentProject: torrentProjectTorrent
                 },

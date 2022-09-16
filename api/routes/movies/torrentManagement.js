@@ -1,3 +1,4 @@
+const download = require("download");
 const fs = require("fs");
 const OS = require("opensubtitles-api");
 const OpenSubtitles = new OS({
@@ -5,15 +6,27 @@ const OpenSubtitles = new OS({
   username: process.env.OS_USERNAME,
   password: process.env.OS_PASSWORD,
 });
+const mime = require("mime");
+const pump = require("pump");
+const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+const ffmpeg = require("fluent-ffmpeg");
+ffmpeg.setFfmpegPath(ffmpegPath);
+const TorrentStream = require("torrent-stream");
+const User = require("../../schemas/user");
+const Movie = require("../../schemas/movie");
+const mongoose = require("mongoose");
+
+
+
+
 
 
 const options = {
     connections: 100,
     uploads: 10,
-    path: process.cwd() + "/api/torrents", // Where to save the files. Overrides `tmp`.
+    path: `${process.cwd()}/sources/movies`,
     verify: true,
-    tracker: true, // Whether or not to use trackers from torrent file or magnet link
-    // Defaults to true
+    tracker: true,
     trackers: [
       "udp://tracker.openbittorrent.com:80",
       "udp://tracker.ccc.de:80",
@@ -39,8 +52,11 @@ const options = {
       "http://tracker.electro-torrent.pl:80/announce"
     ]
 };
-  
+
+
+
 module.exports = {
+
     getSubtitles: async (req, res, next) => {
         var movieId = req.params.movieId;
 
@@ -51,324 +67,266 @@ module.exports = {
             limit: 'best'
         })
         .then(async subtitles => {
-            var subPath = process.cwd() + "/src/subtitles/";
-            var subPathEn = undefined;
-            var subPathFr = undefined;
-            var subPathDe = undefined;
-            
-            if (subtitles.en && subtitles.en.vtt && !fs.existsSync(`${subPath}${movieId}_en.vtt`)) {
+            var subtitlesPath = `${process.cwd()}/sources/subtitles/`;
+            var englishSubtitles = undefined;
+            var frenchSubtitles = undefined;
+            var germanSubtitles = undefined;
+
+            if (subtitles.en && subtitles.en.vtt && !fs.existsSync(`${subtitlesPath}${movieId}_en.vtt`)) {
                 await download(subtitles.en.vtt)
                 .then(data => {
-                    fs.writeFileSync(`${subPath}${movieId}_en.vtt`, data);
+                    fs.writeFileSync(`${subtitlesPath}${movieId}_en.vtt`, data);
                 })
                 .catch(err => {
                     console.log("No english subtitles");
                 });
-                subPathEn = fs.existsSync(`${subPath}${movieId}_en.vtt`) ? `${movieId}_en.vtt` : undefined;
+                englishSubtitles = fs.existsSync(`${subtitlesPath}${movieId}_en.vtt`) ? `${movieId}_en.vtt` : undefined;
             }
-            else if (fs.existsSync(`${subPath}${movieId}_en.vtt`)) {
-                subPathEn = `${movieId}_en.vtt`;
+            else if (fs.existsSync(`${subtitlesPath}${movieId}_en.vtt`)) {
+                englishSubtitles = `${movieId}_en.vtt`;
             }
             
-            if (subtitles.fr && subtitles.fr.vtt && !fs.existsSync(`${subPath}${movieId}_fr.vtt`)) {
+            if (subtitles.fr && subtitles.fr.vtt && !fs.existsSync(`${subtitlesPath}${movieId}_fr.vtt`)) {
                 await download(subtitles.fr.vtt)
                 .then(data => {
-                    fs.writeFileSync(`${subPath}${movieId}_fr.vtt`, data);
+                    fs.writeFileSync(`${subtitlesPath}${movieId}_fr.vtt`, data);
                 })
                 .catch(err => {
                     console.log("No french subtitles");
                 });
-                subPathFr = fs.existsSync(`${subPath}${movieId}_fr.vtt`) ? `${movieId}_fr.vtt` : undefined;
-            } else if (fs.existsSync(`${subPath}${movieId}_fr.vtt`)) {
-                subPathFr = `${movieId}_fr.vtt`;
+                frenchSubtitles = fs.existsSync(`${subtitlesPath}${movieId}_fr.vtt`) ? `${movieId}_fr.vtt` : undefined;
+            } else if (fs.existsSync(`${subtitlesPath}${movieId}_fr.vtt`)) {
+                frenchSubtitles = `${movieId}_fr.vtt`;
             }
 
-            if (subtitles.de && subtitles.de.vtt && !fs.existsSync(`${subPath}${movieId}_ara.vtt`)) {
+            if (subtitles.de && subtitles.de.vtt && !fs.existsSync(`${subtitlesPath}${movieId}_de.vtt`)) {
                 await download(subtitles.de.vtt)
                 .then(data => {
-                    fs.writeFileSync(`${subPath}${movieId}_ara.vtt`, data);
+                    fs.writeFileSync(`${subtitlesPath}${movieId}_de.vtt`, data);
                 })
                 .catch(err => {
-                    console.log("No Arabic subtitles");
+                    console.log("No German subtitles");
                 });
-                subPathDe = fs.existsSync(`${subPath}${movieId}_ara.vtt`) ? `${movieId}_ara.vtt` : undefined;
+                germanSubtitles = fs.existsSync(`${subtitlesPath}${movieId}_de.vtt`) ? `${movieId}_de.vtt` : undefined;
             }
-            else if (fs.existsSync(`${subPath}${movieId}_ara.vtt`)) {
-                subPathDe = `${movieId}_ara.vtt`;
+            else if (fs.existsSync(`${subtitlesPath}${movieId}_de.vtt`)) {
+                germanSubtitles = `${movieId}_de.vtt`;
             }
 
-            return res.status(200).json({ subPathEn, subPathFr, subPathDe });
+            return res.status(200).json({
+                englishSubtitles: englishSubtitles ? `http://localhost:5000/sources/subtitles/${englishSubtitles}` : null,
+                frenchSubtitles: frenchSubtitles ? `http://localhost:5000/sources/subtitles/${frenchSubtitles}` : null,
+                germanSubtitles: germanSubtitles ? `http://localhost:5000/sources/subtitles/${germanSubtitles}` : null
+            });
 
         })
         .catch((error) => {
             console.error("The Promise is rejected!", error);
         })
     },
-            
-            
-    // convertVideo: async (res, path, start, end, mode) => {
-    //     let stream;
-    //     if (mode === 0) {
-    //         stream = path.createReadStream();
-    //     } else {
-    //         stream = fs.createReadStream(path);
-    //     }
-    //     var newStream = ffmpeg({
-    //         source: stream
-    //     })
-    //     .videoCodec("libvpx")
-    //     .videoBitrate(1024)
-    //     .audioCodec("libopus")
-    //     .audioBitrate(128)
-    //     .outputOptions([
-    //         "-crf 30",
-    //         "-deadline realtime",
-    //         "-cpu-used 2",
-    //         "-threads 3"
-    //     ])
-    //     .format("webm")
-    //     .on("progress", progress => {
-    //         //console.log(progress);
-    //     })
-    //     .on("start", cmd => {
-    //         console.log("Starting conversion...");
-    //     })
-    //     .on("end", () => {
-    //         console.log("Conversion is done!");
-    //     })
-    //     .on("error", (err, stdout, stderr) => {
-    //         console.log("Cannot process video: " + err.message);
-    //     });
 
-    //     pump(newStream, res);
-    // },
 
-    // streamMovie: async (res, path, start, end, mode) => {
-    //     if (mode === 1) {
-    //     if (
-    //         mime.getType(path.name) !== "video/mp4" &&
-    //         mime.getType(path.name) !== "video/ogg"
-    //     ) {
-    //         module.exports.convertVideo(res, path, start, end, 0);
-    //     } else {
-    //         let stream = path.createReadStream({
-    //         start: start,
-    //         end: end
-    //         });
-    //         pump(stream, res);
-    //     }
-    //     } else if (
-    //     mime.getType(path) !== "video/mp4" &&
-    //     mime.getType(path) !== "video/ogg"
-    //     ) {
-    //     module.exports.convertVideo(res, path, start, end, 1);
-    //     } else {
-    //     let stream = fs.createReadStream(path, {
-    //         start: start,
-    //         end: end
-    //     });
-    //     pump(stream, res);
-    //     }
-    // },
 
-    // getMovieStream: async (req, res) => {
-    //     var customPath = req.params.quality + "_" + req.params.source;
-    //     if (req.params.uid === "undefined")
-    //     return res.status(404).json({ error: "No user corresponding..." });
-    //     Movie.findOne({ imdbId: req.params.movieId }, (err, result) => {
-    //     if (err || result === null)
-    //         return res.status(404).json({ error: "No movie corresponding..." });
-    //     User.findOne({ _id: req.params.uid }, (err, user) => {
-    //         if (err) console.log(err);
-    //         var exists = false;
-    //         user.movies_seen.forEach(e => {
-    //         if (e === req.params.movieId) exists = true;
-    //         });
-    //         if (!exists) {
-    //         user.movies_seen.push(req.params.movieId);
-    //         user.save();
-    //         }
-    //     });
-    //     var pathFile = undefined;
-    //     if (result && result.path) {
-    //         result.path.forEach(e => {
-    //         if (e[customPath]);
-    //         pathFile = e[customPath];
-    //         });
-    //         if (pathFile !== undefined && fs.existsSync(pathFile)) {
-    //         const stat = fs.statSync(pathFile);
-    //         const fileSize = stat.size;
-    //         var otherstart = 0;
-    //         var otherend = fileSize - 1;
-    //         const range = req.headers.range;
-    //         if (range) {
-    //             const parts = range.replace(/bytes=/, "").split("-");
-    //             const start = parseInt(parts[0], 10);
-    //             const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-    //             const chunksize = end - start + 1;
+    convertVideo: async (res, path, start, end, mode) => {
+        let stream;
+        if (mode === 0) {
+            stream = path.createReadStream();
+        } else {
+            stream = fs.createReadStream(path);
+        }
+        var newStream = ffmpeg({ source: stream })
+            .videoCodec("libvpx")
+            .videoBitrate(1024)
+            .audioCodec("libopus")
+            .audioBitrate(128)
+            .outputOptions([
+                "-crf 30",
+                "-deadline realtime",
+                "-cpu-used 2",
+                "-threads 3"
+            ])
+            .format("webm")
+            .on("progress", progress => {
+                console.log(progress);
+            })
+            .on("start", cmd => {
+                console.log("Starting conversion...");
+            })
+            .on("end", () => {
+                console.log("Conversion is done!");
+            })
+            .on("error", (err, stdout, stderr) => {
+                console.log(`Cannot process video: err.message`);
+            });
 
-    //             const head = {
-    //             "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-    //             "Accept-Ranges": "bytes",
-    //             "Content-Length": chunksize,
-    //             "Content-Type": mime.getType(pathFile)
-    //             };
-    //             res.writeHead(206, head);
-    //             module.exports.streamMovie(res, pathFile, start, end);
-    //         } else {
-    //             const head = {
-    //             "Content-Length": fileSize,
-    //             "Content-Type": mime.getType(pathFile)
-    //             };
-    //             res.writeHead(200, head);
-    //             module.exports.streamMovie(res, pathFile, otherstart, otherend, 0);
-    //         }
-    //         } else
-    //         module.exports.downloadMovie(
-    //             req,
-    //             res,
-    //             req.params.movieId,
-    //             req.params.quality,
-    //             req.params.source
-    //         );
-    //     } else
-    //         module.exports.downloadMovie(
-    //         req,
-    //         res,
-    //         req.params.movieId,
-    //         req.params.quality,
-    //         req.params.source
-    //         );
-    //     result.lastViewed = new Date();
-    //     result.save();
-    //     });
-    // },
+        pump(newStream, res);
+    },
 
-    // downloadMovie: async (req, res, movieId, quality, source) => {
-    //     try {
-    //     Movie.findOne({ imdbId: movieId }, (err, result) => {
-    //         if (err || result === null)
-    //         return res.status(404).json({ error: "No movie corresponding..." });
-    //         else if (result) {
-    //         console.log("Processing download...");
-    //         var magnet = undefined;
-    //         result.torrents.forEach(element => {
-    //             if (element.quality === quality && element.source === source)
-    //             magnet = element.magnet;
-    //         });
-    //         if (magnet !== undefined) {
-    //             if (source === "Popcorn Time") {
-    //             magnet = magnet.split(":")[3];
-    //             magnet = magnet.split("&")[0];
-    //             } else {
-    //             magnet = magnet.split("/");
-    //             magnet = magnet[magnet.length - 1];
-    //             }
-    //             console.log("Magnet link: ", magnet);
-    //             const engine = TorrentStream(magnet, options);
 
-    //             var newFilePath;
-    //             let fileSize;
 
-    //             engine
-    //             .on("ready", () => {
-    //                 engine.files.forEach(file => {
-    //                 var ext = file.name.substr(-4, 4);
-    //                 if (
-    //                     ext === ".mp4" ||
-    //                     ext === ".mkv" ||
-    //                     ext === ".avi" ||
-    //                     ext === ".ogg"
-    //                 ) {
-    //                     file.select();
-    //                     if (ext !== ".mp4" && ".ogg") ext = ".webm";
-    //                     fileSize = file.length;
-    //                     newFilePath = process.cwd() + "/API/torrents/" + file.path;
+    streamMovie: async (res, path, start, end, mode) => {
+        if (mode === 1) {
+            if (mime.getType(path.name) !== "video/mp4" && mime.getType(path.name) !== "video/ogg") {
+                module.exports.convertVideo(res, path, start, end, 0);
+            }
+            else {
+                let stream = path.createReadStream({
+                    start: start,
+                    end: end
+                });
+                pump(stream, res);
+            }
+        }
+        else if (mime.getType(path) !== "video/mp4" && mime.getType(path) !== "video/ogg") {
+            module.exports.convertVideo(res, path, start, end, 1);
+        } else {
+            let stream = fs.createReadStream(path, {
+                start: start,
+                end: end
+            });
+            pump(stream, res);
+        }
+    },
 
-    //                     const range = req.headers.range;
-    //                     if (range) {
-    //                     const parts = range.replace(/bytes=/, "").split("-");
-    //                     const start = parseInt(parts[0], 10);
-    //                     const end = parts[1]
-    //                         ? parseInt(parts[1], 10)
-    //                         : fileSize - 1;
-    //                     const chunksize = end - start + 1;
 
-    //                     const head = {
-    //                         "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-    //                         "Accept-Ranges": "bytes",
-    //                         "Content-Length": chunksize,
-    //                         "Content-Type":
-    //                         mime.getType(file.name) === "video/mp4" ||
-    //                             mime.getType(file.name) === "video/ogg"
-    //                             ? mime.getType(file.name)
-    //                             : "video/webm",
-    //                         Connection: "keep-alive"
-    //                     };
-    //                     if (
-    //                         mime.getType(file.path) == "video/mp4" ||
-    //                         mime.getType(file.path) == "video/ogg"
-    //                     )
-    //                         res.writeHead(206, head);
-    //                     module.exports.streamMovie(res, file, start, end, 1);
-    //                     } else {
-    //                     const head = {
-    //                         "Content-Length": fileSize,
-    //                         "Content-Type":
-    //                         mime.getType(file.name) === "video/mp4" ||
-    //                             mime.getType(file.name) === "video/ogg"
-    //                             ? mime.getType(file.name)
-    //                             : "video/webm"
-    //                     };
-    //                     res.writeHead(200, head);
-    //                     module.exports.streamMovie(res, file, 0, fileSize - 1, 1);
-    //                     }
-    //                 } else {
-    //                     file.deselect();
-    //                 }
-    //                 });
-    //             })
-    //             .on("download", () => {
-    //                 const downloaded =
-    //                 Math.round((engine.swarm.downloaded / fileSize) * 100 * 100) /
-    //                 100;
 
-    //                 console.log("Downloded: " + downloaded + "%");
-    //             })
-    //             .on("idle", () => {
-    //                 console.log("Download complete!");
-    //                 var update = quality + "_" + source;
-    //                 result.path.push({
-    //                 [update]: newFilePath
-    //                 });
-    //                 result.lastViewed = new Date();
-    //                 result.save();
-    //             });
-    //         } else
-    //             return res.status(404).json({ error: "No movie corresponding..." });
-    //         } else
-    //         return res.status(404).json({ error: "No movie corresponding..." });
-    //     });
-    //     } catch (err) { }
-    // },
+    downloadMovie: async (req, res, userId, source, magnet) => {
+        try {
 
-    // getMoviesFromImdbIdArray: async (req, res, next) => {
-    //     await Movie.find({ imdbId: { $in: req.body.imdbIdArray } }, async function (
-    //     err,
-    //     movies
-    //     ) {
-    //     if (err) {
-    //         return res
-    //         .status(400)
-    //         .json({ error: "Impossible to retrieve movies..." });
-    //     }
-    //     if (!movies) {
-    //         return res
-    //         .status(400)
-    //         .json({ error: "Impossible to retrieve movies..." });
-    //     } else {
-    //         return res.status(200).json({ moviesList: movies });
-    //     }
-    //     });
-    // }
+            let newMagnet;
+
+            if (source === 'yts') {
+                let ytsHash = magnet.split("/");
+                ytsHash = ytsHash[ytsHash.length - 1];
+                newMagnet = `magnet:?xt=urn:btih:${ytsHash}&dn=Url+Encoded+Movie+Name&tr=http://track.one:1234/announce&tr=udp://track.two:80`;
+            }
+            else if (source == 'torrentProject') {
+                newMagnet = magnet;
+            }
+
+            const engine = TorrentStream(newMagnet, options);
+
+            let newFilePath;
+            let fileSize;
+
+            engine
+            .on("ready", () => {
+                engine.files.forEach(file => {
+                    var ext = file.name.substr(-4, 4);
+                    if (
+                        ext === ".mp4" || ext === ".mkv" ||
+                        ext === ".avi" || ext === ".ogg"
+                    ) {
+                        file.select();
+                        if (ext !== ".mp4" && ".ogg") ext = ".webm";
+                        fileSize = file.length;
+                        newFilePath = `${process.cwd()}/sources/movies/${file.path}`;
+
+                        const range = req.headers.range;
+                        if (range) {
+                            const parts = range.replace(/bytes=/, "").split("-");
+                            const start = parseInt(parts[0], 10);
+                            const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+                            const chunksize = end - start + 1;
+
+                            const head = {
+                                "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+                                "Accept-Ranges": "bytes",
+                                "Content-Length": chunksize,
+                                "Content-Type": mime.getType(file.name) === "video/mp4" || mime.getType(file.name) === "video/ogg" ?
+                                                mime.getType(file.name) : "video/webm",
+                                Connection: "keep-alive"
+                            };
+                            if (mime.getType(file.path) == "video/mp4" || mime.getType(file.path) == "video/ogg")
+                                res.writeHead(206, head);
+                                module.exports.streamMovie(res, file, start, end, 1);
+                        }
+                        else {
+                            const head = {
+                                "Content-Length": fileSize,
+                                "Content-Type": mime.getType(file.name) === "video/mp4" || mime.getType(file.name) === "video/ogg" ?
+                                                mime.getType(file.name) : "video/webm"
+                            };
+                            res.writeHead(200, head);
+                            module.exports.streamMovie(res, file, 0, fileSize - 1, 1);
+                        }
+                    }
+                    else { file.deselect(); }
+                });
+            })
+            .on("download", () => {
+                const downloaded = Math.round((engine.swarm.downloaded / fileSize) * 100 * 100) / 100;
+                console.log("Downloded: " + downloaded + "%");
+            })
+            .on("idle", () => {
+                console.log("Download complete!");
+                // var update = quality + "_" + source;
+                // result.path.push({
+                // [update]: newFilePath
+                // });
+                // result.lastViewed = new Date();
+                // result.save();
+            });
+
+        } catch (error) { console.log(error) }
+    },
+
+
+
+    getMovieStream: async (req, res) => {
+
+        if (!req.query.magnet) return res.status(404).json({ error: "INVALID_TRANSMITTED_DATA" });
+
+        const movieId = req.params.movieId;
+        const userId = mongoose.Types.ObjectId(req.params.userId);
+        const source = req.params.source;
+        const magnet = req.query.magnet;
+
+        const user = User.findOne({ _id: userId });
+        if (!user) return res.status(404).json({ error: "INVALID_USER_ID" });
+
+        const movie = Movie.findOne({ movieId: movieId });
+
+
+        if (movie) {
+            if (fs.existsSync(movie.path)) {
+                const stat = fs.statSync(movie.path);
+                const fileSize = stat.size;
+                const fileStart = 0;
+                const fileEnd = fileSize - 1;
+                const range = req.headers.range;
+
+                if (range) {
+                    const rangeParts = range.replace(/bytes=/, '').split('-');
+                    const start = parseInt(rangeParts[0], 10);
+                    const end = rangeParts[1] ? parseInt(rangeParts[1], 10) : fileSize - 1;
+                    const chunkSize = end - start + 1;
+
+                    const head = {
+                        "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+                        "Accept-Ranges": "bytes",
+                        "Content-Length": chunkSize,
+                        "Content-Type": mime.getType(movie.path)
+                    }
+                    res.writeHead(206, head);
+                    module.exports.streamMovie(res, pathFile, start, end);
+                }
+                else {
+                    const head = {
+                        "Content-Length": fileSize,
+                        "Content-Type": mime.getType(movie.path)
+                    }
+                    res.writeHead(200, head);
+                    module.exports.streamMovie(res, pathFile, fileStart, fileEnd, 0);
+                }
+            }
+            else {
+                module.exports.downloadMovie(req, res, userId, source, magnet);
+            }
+        }
+        else {
+            module.exports.downloadMovie(req, res, userId, source, magnet);
+        }
+    }
+
 };

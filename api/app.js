@@ -1,24 +1,21 @@
-// const createError = require("http-errors");
 const express = require("express");
-// var app = require("../app");
 var http = require("http");
 require("colors");
 const createError = require("http-errors");
-// const path = require("path");
-// const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const passport = require("passport");
-const User = require("./schemas/user");
-// Connexion to Database
 require('dotenv').config();
-const mongoose = require("mongoose");
-const insertUsers = require("./hypertubeUsers");
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-// mongoose.set("useNewUrlParser", true);
-// mongoose.set("useFindAndModify", false);
-// mongoose.set("useCreateIndex", true);
-// mongoose.set("useUnifiedTopology", true);
+const path = require('path');
+const mongoose = require("mongoose");
+const insertUsers = require("./hypertubeUsers");
+
+
+
+
+
+// connection to database
 mongoose.connect(
   process.env.MONGO_URI,
   {
@@ -33,89 +30,42 @@ db.once("open", async () => {
   console.log("Database connected!");
 //   await insertUsers();
 });
-// const fileUpload = require("express-fileupload");
-// const morganMiddleware = require("./config/morgan");
-// const helmet = require("helmet");
-// const promMid = require("express-prometheus-middleware");
-// require("./config/redis");
-
-// const { launchRequestBackground } = require("./background/request");
-// const perfPreprocessing = require("./config/perfpreprocessing");
-// global["appRoot"] = path.resolve(__dirname);
-
-// if (!process.env.CICD) {
-//     perfPreprocessing.init();
-
-//     // LAUNCHING ALL BACKGROUND TASK
-//     launchRequestBackground();
-// }
-
-// for insert users
-
-
-
-
-
-
-
-
-
-
 
 
 
 
 const app = express();
+
+
+
+
 app.use(cookieParser());
 
 
 
 
-
-
-
-
-
-
-
-// var path = require("path");
-
-// if (process.env.NODE_ENV !== "production") {
-//     console.log("WARNING: This process started in development mode".red);
-//     require("dotenv").config({
-//         path: path.resolve(process.cwd(), "../Core/.env")
-//     });
-// }
-
-
-
-
-
-/**
- * Get port from environment and store in Express.
- */
-
+// get port from environment and store in Express.
  var port = normalizePort("5000");
  app.set("port", port);
  
- /**
-  * Create HTTP server.
-  */
- 
+
+
+
+// create HTTP server.
  var server = http.createServer(app);
+
  
- /**
-  * Listen on provided port, on all network interfaces.
-  */
- 
+
+
+// listen on provided port, on all network interfaces.
  server.listen(port);
  server.on("error", onError);
  server.on("listening", onListening);
  
- /**
-  * Normalize a port into a number, string, or false.
-  */
- 
+
+
+
+// normalize a port into a number, string, or false.
  function normalizePort(val) {
      var port = parseInt(val, 10);
  
@@ -132,10 +82,10 @@ app.use(cookieParser());
      return false;
  }
  
- /**
-  * Event listener for HTTP server "error" event.
-  */
- 
+
+
+
+// event listener for HTTP server "error" event.
  function onError(error) {
     console.log("Error", error)
      if (error.syscall !== "listen") {
@@ -161,10 +111,11 @@ app.use(cookieParser());
      }
  }
  
- /**
-  * Event listener for HTTP server "listening" event.
-  */
- 
+
+
+
+
+ // event listener for HTTP server "listening" event.
  function onListening() {
      var addr = server.address();
      console.log("LISTENING",addr)
@@ -173,24 +124,93 @@ app.use(cookieParser());
          : "port " + addr.port;
      console.log(`INFO: Server started on ${bind}`.gray);
  }
+
+
+
+
  
+ // policy cors
+ app.use(cors());
+ 
+ 
+ 
+ // authorising access to resources
+ app.use("/sources/subtitles", express.static(`${__dirname}/sources/subtitles`));
+ app.use("/sources/movies", express.static(`${__dirname}/sources/movies`));
+ 
+ 
+ 
+ app.use(session({
+     resave: false,
+     saveUninitialized: true,
+     secret: 'SECRET' 
+ }));
+ 
+ 
+ 
+ 
+ // passport
+ app.use(passport.initialize());
+ app.use(passport.session());
+
+
+
+
+ app.use(express.json({ limit: "50mb" }));
+
+
+
+
+const version1Router = require("./routes/routing");
+app.use("/", version1Router);
+
+app.use(function (req, res, next) {
+    next(createError(404));
+});
+
+
+
+
+app.use(function handlingError(err, req, res, next) {
+    res.status(err.status || 500);
+    res.json({ response: "ko", message: err.message });
+});
+
+
+
+// const fileUpload = require("express-fileupload");
+// const morganMiddleware = require("./config/morgan");
+// const helmet = require("helmet");
+// const promMid = require("express-prometheus-middleware");
+// require("./config/redis");
+
+// const { launchRequestBackground } = require("./background/request");
+// const perfPreprocessing = require("./config/perfpreprocessing");
+// global["appRoot"] = path.resolve(__dirname);
+
+// if (!process.env.CICD) {
+//     perfPreprocessing.init();
+
+//     // LAUNCHING ALL BACKGROUND TASK
+//     launchRequestBackground();
+// }
+
+
+
+
+// var path = require("path");
+
+// if (process.env.NODE_ENV !== "production") {
+//     console.log("WARNING: This process started in development mode".red);
+//     require("dotenv").config({
+//         path: path.resolve(process.cwd(), "../Core/.env")
+//     });
+// }
 
 
 
 
 
-
-app.use(cors());
-
-app.use(session({
-    resave: false,
-    saveUninitialized: true,
-    secret: 'SECRET' 
-  }));
-
-// passport
-app.use(passport.initialize());
-app.use(passport.session());
 
 // passport.use(User.createStrategy());
 // passport.serializeUser(User.serializeUser());
@@ -211,7 +231,7 @@ app.use(passport.session());
 // app.use(fileUpload({
 //     limits: { fileSize: 1024 * 1024 * 1024 }
 // }));
-app.use(express.json({ limit: "50mb" }));
+
 
 // app.use(function (req, res, next) {
 //     res.header("Content-Security-Policy", "frame-ancestors " + process.env.APP_URL);
@@ -238,19 +258,11 @@ app.use(express.json({ limit: "50mb" }));
 //     app.use("/dev/", require("./routes/dev/router"));
 // }
 // app.use("/1.0/", version1Router);
-const version1Router = require("./routes/routing");
-app.use("/", version1Router);
 
-app.use(function (req, res, next) {
-    next(createError(404));
-});
 
 // ### HANDLING ERROR FOR EVERY CALL OF next(createError(code, message));
 // noinspection JSCheckFunctionSignatures
-app.use(function handlingError(err, req, res, next) {
-    res.status(err.status || 500);
-    res.json({ response: "ko", message: err.message });
-});
+
 // ### END OF HANDLING ERROR FOR EVERY CALL OF next(createError(code, message));
 // app.use("/1.1/", version1Router_1_1);
 
@@ -266,7 +278,6 @@ app.use(function handlingError(err, req, res, next) {
 
 // // noinspection JSCheckFunctionSignatures
 // app.use(handlingError);
-
 
 
 module.exports = app;
