@@ -28,28 +28,64 @@ const options = {
     verify: true,
     tracker: true,
     trackers: [
-      "udp://tracker.openbittorrent.com:80",
-      "udp://tracker.ccc.de:80",
-      "udp://tracker.leechers-paradise.org:6969/announce",
-      "udp://tracker.pirateparty.gr:6969/announce",
-      "udp://tracker.coppersurfer.tk:6969/announce",
-      "http://asnet.pw:2710/announce",
-      "http://tracker.opentrackr.org:1337/announce",
-      "udp://tracker.opentrackr.org:1337/announce",
-      "udp://tracker1.xku.tv:6969/announce",
-      "udp://tracker1.wasabii.com.tw:6969/announce",
-      "udp://tracker.zer0day.to:1337/announce",
-      "udp://p4p.arenabg.com:1337/announce",
-      "http://tracker.internetwarriors.net:1337/announce",
-      "udp://tracker.internetwarriors.net:1337/announce",
-      "udp://allesanddro.de:1337/announce",
-      "udp://9.rarbg.com:2710/announce",
-      "udp://tracker.dler.org:6969/announce",
-      "http://mgtracker.org:6969/announce",
-      "http://tracker.mg64.net:6881/announce",
-      "http://tracker.devil-torrents.pl:80/announce",
-      "http://ipv4.tracker.harry.lu:80/announce",
-      "http://tracker.electro-torrent.pl:80/announce"
+        "udp://open.demonii.com:1337/announce",
+        "udp://tracker.openbittorrent.com:80",
+        "udp://tracker.coppersurfer.tk:6969",
+        "udp://glotorrents.pw:6969/announce",
+        "udp://torrent.gresille.org:80/announce",
+        "udp://p4p.arenabg.com:1337",
+        "udp://tracker.leechers-paradise.org:6969",
+        "udp://tracker.ccc.de:80",
+        "udp://tracker.leechers-paradise.org:6969/announce",
+        "udp://tracker.pirateparty.gr:6969/announce",
+        "udp://tracker.coppersurfer.tk:6969/announce",
+        "http://asnet.pw:2710/announce",
+        "http://tracker.opentrackr.org:1337/announce",
+        "udp://tracker.opentrackr.org:1337/announce",
+        "udp://tracker1.xku.tv:6969/announce",
+        "udp://tracker1.wasabii.com.tw:6969/announce",
+        "udp://tracker.zer0day.to:1337/announce",
+        "udp://p4p.arenabg.com:1337/announce",
+        "http://tracker.internetwarriors.net:1337/announce",
+        "udp://tracker.internetwarriors.net:1337/announce",
+        "udp://allesanddro.de:1337/announce",
+        "udp://9.rarbg.com:2710/announce",
+        "udp://tracker.dler.org:6969/announce",
+        "http://mgtracker.org:6969/announce",
+        "http://tracker.mg64.net:6881/announce",
+        "http://tracker.devil-torrents.pl:80/announce",
+        "http://ipv4.tracker.harry.lu:80/announce",
+        "http://tracker.electro-torrent.pl:80/announce",
+        "udp://wambo.club:1337/announce",
+        "udp://tracker.dutchtracking.com:6969/announce",
+        "udp://tc.animereactor.ru:8082/announce",
+        "udp://tracker.uw0.xyz:6969/announce",
+        "udp://tracker.kamigami.org:2710/announce",
+        "http://tracker.files.fm:6969/announce",
+        "udp://opentracker.i2p.rocks:6969/announce",
+        "udp://tracker.zerobytes.xyz:1337/announce",
+        "https://tracker.nitrix.me:443/announce",
+        "http://novaopcj.icu:10325/announce",
+        "udp://aaa.army:8866/announce",
+        "https://tracker.imgoingto.icu:443/announce",
+        "udp://tracker.shkinev.me:6969/announce",
+        "udp://blokas.io:6969/announce",
+        "udp://api.bitumconference.ru:6969/announce",
+        "udp://cutiegirl.ru:6969/announce",
+        "udp://ln.mtahost.co:6969/announce",
+        "udp://vibe.community:6969/announce",
+        "udp://tracker.vulnix.sh:6969/announce",
+        "udp://wassermann.online:6969/announce",
+        "udp://kanal-4.de:6969/announce",
+        "udp://mts.tvbit.co:6969/announce",
+        "udp://adminion.n-blade.ru:6969/announce",
+        "udp://benouworldtrip.fr:6969/announce",
+        "udp://sd-161673.dedibox.fr:6969/announce",
+        "udp://47.ip-51-68-199.eu:6969/announce",
+        "udp://cdn-1.gamecoast.org:6969/announce",
+        "udp://daveking.com:6969/announce",
+        "http://rt.tace.ru:80/announce",
+        "udp://forever-tracker.zooki.xyz:6969/announce"
     ]
 };
 
@@ -134,7 +170,11 @@ module.exports = {
         } else {
             stream = fs.createReadStream(path);
         }
-        var newStream = ffmpeg({ source: stream })
+
+        var progression = 0;
+
+        var newStream =
+            ffmpeg({ source: stream })
             .videoCodec("libvpx")
             .videoBitrate(1024)
             .audioCodec("libopus")
@@ -147,16 +187,20 @@ module.exports = {
             ])
             .format("webm")
             .on("progress", progress => {
-                console.log(progress);
+                if (progress.targetSize >= (progression + 1000) && progress.targetSize <= (progression + 1200)) {
+                    progression = progress.targetSize;
+                    console.log(`↓↓↓ CONVERSION IN PROGRESS... `);
+                    console.log(progress);
+                }
             })
             .on("start", cmd => {
-                console.log("Starting conversion...");
+                console.log("***| STARTING CONVERSION... |***");
             })
             .on("end", () => {
-                console.log("Conversion is done!");
+                console.log("CONVERSION IS DONE!");
             })
             .on("error", (err, stdout, stderr) => {
-                console.log(`Cannot process video: err.message`);
+                console.log(`CANNOT PROCESS VIDEO, ERROR => ${err.message}`);
             });
 
         pump(newStream, res);
@@ -196,9 +240,7 @@ module.exports = {
             let newMagnet;
 
             if (source === 'yts') {
-                let ytsHash = magnet.split("/");
-                ytsHash = ytsHash[ytsHash.length - 1];
-                newMagnet = `magnet:?xt=urn:btih:${ytsHash}&dn=Url+Encoded+Movie+Name&tr=http://track.one:1234/announce&tr=udp://track.two:80`;
+                newMagnet = `magnet:?xt=urn:btih:${magnet}&dn=Url+Encoded+Movie+Name&tr=http://track.one:1234/announce&tr=udp://track.two:80&udp://open.demonii.com:1337/announce&udp://tracker.openbittorrent.com:80&udp://tracker.coppersurfer.tk:6969&udp://glotorrents.pw:6969/announce&udp://tracker.opentrackr.org:1337/announce&udp://torrent.gresille.org:80/announce&udp://p4p.arenabg.com:1337&udp://tracker.leechers-paradise.org:6969`;
             }
             else if (source == 'torrentProject') {
                 newMagnet = magnet;
@@ -208,15 +250,13 @@ module.exports = {
 
             let newFilePath;
             let fileSize;
+            var progress = 0;
 
             engine
             .on("ready", () => {
                 engine.files.forEach(file => {
                     var ext = file.name.substr(-4, 4);
-                    if (
-                        ext === ".mp4" || ext === ".mkv" ||
-                        ext === ".avi" || ext === ".ogg"
-                    ) {
+                    if (ext === ".mp4" || ext === ".mkv" || ext === ".avi" || ext === ".ogg") {
                         file.select();
                         if (ext !== ".mp4" && ".ogg") ext = ".webm";
                         fileSize = file.length;
@@ -237,8 +277,9 @@ module.exports = {
                                                 mime.getType(file.name) : "video/webm",
                                 Connection: "keep-alive"
                             };
-                            if (mime.getType(file.path) == "video/mp4" || mime.getType(file.path) == "video/ogg")
+                            if (mime.getType(file.path) === "video/mp4" || mime.getType(file.path) === "video/ogg") {
                                 res.writeHead(206, head);
+                            }
                                 module.exports.streamMovie(res, file, start, end, 1);
                         }
                         else {
@@ -255,17 +296,23 @@ module.exports = {
                 });
             })
             .on("download", () => {
-                const downloaded = Math.round((engine.swarm.downloaded / fileSize) * 100 * 100) / 100;
-                console.log("Downloded: " + downloaded + "%");
+                const downloaded = Math.round(Math.round((engine.swarm.downloaded / fileSize) * 100 * 100) / 100);
+                if (downloaded === (progress + 5)) {
+                    console.log(`DOWNLOAD => ${downloaded}%`);
+                    progress = downloaded;
+                }
             })
-            .on("idle", () => {
-                console.log("Download complete!");
-                // var update = quality + "_" + source;
-                // result.path.push({
-                // [update]: newFilePath
-                // });
-                // result.lastViewed = new Date();
-                // result.save();
+            .on("idle", async () => {
+                console.log("FULL DOWNLOAD!");
+                const movie = await Movie.findOne({ movieId: req.params.movieId });
+                if (!movie) {
+                    const newMovie = new Movie({
+                        movieId: req.params.movieId,
+                        path: newFilePath,
+                        lastView: new Date()
+                    });
+                    newMovie.save();
+                }
             });
 
         } catch (error) { console.log(error) }
@@ -282,14 +329,22 @@ module.exports = {
         const source = req.params.source;
         const magnet = req.query.magnet;
 
-        const user = User.findOne({ _id: userId });
+        const user = await User.findOne({ _id: userId });
         if (!user) return res.status(404).json({ error: "INVALID_USER_ID" });
 
-        const movie = Movie.findOne({ movieId: movieId });
+        if (!user.moviesViewed.includes(movieId)) {
+            user.moviesViewed.push(movieId);
+            user.save();
+        }
 
+        const movie = await Movie.findOne({ movieId: movieId });
 
         if (movie) {
             if (fs.existsSync(movie.path)) {
+
+                movie.lastView = new Date();
+                movie.save();
+
                 const stat = fs.statSync(movie.path);
                 const fileSize = stat.size;
                 const fileStart = 0;
@@ -309,7 +364,7 @@ module.exports = {
                         "Content-Type": mime.getType(movie.path)
                     }
                     res.writeHead(206, head);
-                    module.exports.streamMovie(res, pathFile, start, end);
+                    module.exports.streamMovie(res, movie.path, start, end, 0);
                 }
                 else {
                     const head = {
@@ -317,7 +372,7 @@ module.exports = {
                         "Content-Type": mime.getType(movie.path)
                     }
                     res.writeHead(200, head);
-                    module.exports.streamMovie(res, pathFile, fileStart, fileEnd, 0);
+                    module.exports.streamMovie(res, movie.path, fileStart, fileEnd, 0);
                 }
             }
             else {

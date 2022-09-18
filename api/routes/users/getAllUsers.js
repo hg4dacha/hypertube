@@ -12,7 +12,7 @@ async function getAllUsers(req, res, next) {
         return res.status(200).json({users});
     }
     catch(error) {
-        return next(createError(500, e.message));
+        return next(createError(400, e.message));
     }
 
 }

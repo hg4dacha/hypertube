@@ -64,7 +64,7 @@ async function getMovieData(req, res, next) {
                     const currentTorrent = {
                         name: ytsResponse.data.data.movie.title,
                         url: ytsTorrentsResponse[0].url,
-                        magnet: ytsTorrentsResponse[0].url,
+                        magnet: ytsTorrentsResponse[0].hash,
                         quality: ytsTorrentsResponse[0].quality,
                         language: "en",
                         seed: ytsTorrentsResponse[0].seeds,
@@ -165,7 +165,7 @@ async function getMovieData(req, res, next) {
         }
     }
     catch (e) {
-        return next(createError(500, e.message));
+        return next(createError(400, e.message));
     }
 
 }

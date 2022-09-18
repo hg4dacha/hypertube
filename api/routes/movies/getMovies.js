@@ -119,7 +119,7 @@ async function getMovies(req, res, next) {
 
     }
     catch(e) {
-        return next(createError(500, e.message));
+        return next(createError(400, e.message));
     }
 
 }

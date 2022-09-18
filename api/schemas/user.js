@@ -10,7 +10,7 @@ const usersSchema = mongoose.Schema({
     password: { type: String, unique: false, default: null },
     language: { type: String, default: "en" },
     tokenPassword:  { type: String, default: null },
-    moviesViewed: { type: Array, default: [] }
+    moviesViewed: Array
 });
 
 

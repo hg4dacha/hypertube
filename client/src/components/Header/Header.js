@@ -23,7 +23,7 @@ const Header = () => {
             type: "user/reset"
         })
         localStorage.getItem('user') !== null && localStorage.removeItem('user');
-        Cookies.get('accessKey') !== undefined && Cookies.remove('accessKey');
+        Cookies.get('accessKey') !== undefined && Cookies.remove('accessKey', {sameSite: 'strict'});
         navigate('/login');
     }
 

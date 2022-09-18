@@ -55,6 +55,7 @@ export default function Player({
             controls
             preload="auto"
             crossOrigin="anonymous"
+            autoPlay={false}
             onPlay={() => null}
         >
             <source src={stream} type="video/webm" />

@@ -67,7 +67,7 @@ const Signin = () => {
                     // add user data in local storage
                     localStorage.setItem('user', JSON.stringify(response.data.data));
                     i18next.changeLanguage(response.data.data.language);
-                    Cookies.set('accessKey', response.data.accessKey, { expires: 1 });
+                    Cookies.set('accessKey', response.data.accessKey, { expires: 1, sameSite: 'strict' });
                     setSigninForm({
                         email: '',
                         password: ''

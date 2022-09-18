@@ -79,7 +79,7 @@ async function getMovieComments(req, res, next) {
     }
     catch (e) {
         console.log(e.message);
-        return next(createError(500, e.message));
+        return next(createError(400, e.message));
     }
 
 }

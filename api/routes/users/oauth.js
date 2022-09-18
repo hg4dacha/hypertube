@@ -53,7 +53,7 @@ async function oauth(req, res, next) {
         });
     } catch (e) {
         console.error(e);
-        return next(createError(500, e.message));
+        return next(createError(400, e.message));
     }
     
 }

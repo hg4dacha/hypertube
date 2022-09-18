@@ -10,6 +10,8 @@ const session = require('express-session');
 const path = require('path');
 const mongoose = require("mongoose");
 const insertUsers = require("./hypertubeUsers");
+const schedule = require("node-schedule");
+const removeOldMovies = require("./routes/movies/removeOldMovies");
 
 
 
@@ -175,6 +177,17 @@ app.use(function handlingError(err, req, res, next) {
     res.status(err.status || 500);
     res.json({ response: "ko", message: err.message });
 });
+
+
+
+
+// remove old movies
+schedule.scheduleJob("0 0 0 * * *", () => {
+    removeOldMovies();
+})
+
+
+
 
 
 

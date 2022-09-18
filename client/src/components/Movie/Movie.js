@@ -99,6 +99,11 @@ const Movie = () => {
 
   useEffect( () => {
 
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
     setReactLoading(true);
 
     axios.get(`movies/data?movieId=${params.movieId}`, { headers: headers })
